@@ -101,7 +101,7 @@ def calculate_rate_of_deviation(data, price_column='Close', moving_average_perio
 
     return data
 
- def rod_IMX_wrapper(rod_val):
+def rod_IMX_wrapper(rod_val):
     if rod_val < -.1:
         return 1, 0
     elif rod_val <= -0.05 and rod_val >= -.1:
@@ -116,20 +116,20 @@ def calculate_rate_of_deviation(data, price_column='Close', moving_average_perio
         print("Out of Range")
         sys.exit(1)
    
-   def calculate_stochastic_kd(data, close_column='Close', low_column='Low', high_column='High', lookback_days=14, smoothing_period=3):
-        
-        data['Lowest Low'] = data[low_column].rolling(window=lookback_days, min_periods=1).min()
-        data['Highest High'] = data[high_column].rolling(window=lookback_days, min_periods=1).max()
-
-        data['%K'] = ((data[close_column] - data['Lowest Low']) / (data['Highest High'] - data['Lowest Low'])) * 100
-
-        data['%D'] = data['%K'].rolling(window=smoothing_period, min_periods=1).mean()
-
-        data = data.drop(['Lowest Low', 'Highest High'], axis=1)
-        
-        return data
+def calculate_stochastic_kd(data, close_column='Close', low_column='Low', high_column='High', lookback_days=14, smoothing_period=3):
     
- def kd_IMX_wrapper(kd_val):
+    data['Lowest Low'] = data[low_column].rolling(window=lookback_days, min_periods=1).min()
+    data['Highest High'] = data[high_column].rolling(window=lookback_days, min_periods=1).max()
+
+    data['%K'] = ((data[close_column] - data['Lowest Low']) / (data['Highest High'] - data['Lowest Low'])) * 100
+
+    data['%D'] = data['%K'].rolling(window=smoothing_period, min_periods=1).mean()
+
+    data = data.drop(['Lowest Low', 'Highest High'], axis=1)
+    
+    return data
+    
+def kd_IMX_wrapper(kd_val):
     if kd_val < 30 and kd_val >= 0:
         return linear_interpolator(30, .7, 0, 1, rod_val), 0
     elif rod_val <= 70 and rod_val >= 30:
@@ -139,3 +139,45 @@ def calculate_rate_of_deviation(data, price_column='Close', moving_average_perio
     else: 
         print("Out of Range")
         sys.exit(1)
+
+def calculate_golden_dead_cross(data, short_term=5, long_term=26, price_column='Close'):
+    
+    data[f'Short_MA_{short_term}'] = data[price_column].rolling(window=short_term, min_periods=1).mean()
+    data[f'Long_MA_{long_term}'] = data[price_column].rolling(window=long_term, min_periods=1).mean()
+
+    data['gd_cross'] = 0  # 0 represents no signal
+
+    golden_cross_mask = (data[f'Short_MA_{short_term}'] > data[f'Long_MA_{long_term}']) & \
+                        (data[f'Short_MA_{short_term}'].shift(1) <= data[f'Long_MA_{long_term}'].shift(1))
+    data.loc[golden_cross_mask, 'gd_cross'] = 1
+
+    dead_cross_mask = (data[f'Short_MA_{short_term}'] < data[f'Long_MA_{long_term}']) & \
+                      (data[f'Short_MA_{short_term}'].shift(1) >= data[f'Long_MA_{long_term}'].shift(1))
+    data.loc[dead_cross_mask, 'gd_cross'] = -1
+
+    data = data.drop([f'Short_MA_{short_term}', f'Long_MA_{long_term}'], axis=1)
+
+    return data
+
+def calculate_macd(data, short_term=5, long_term=26, signal_period=9, price_column='Close'):
+
+    data[f'Short_MA_{short_term}'] = data[price_column].rolling(window=short_term, min_periods=1).mean()
+    data[f'Long_MA_{long_term}'] = data[price_column].rolling(window=long_term, min_periods=1).mean()
+
+    data['MACD'] = data[f'Short_MA_{short_term}'] - data[f'Long_MA_{long_term}']
+
+    data['Signal'] = data['MACD'].rolling(window=signal_period, min_periods=1).mean()
+
+    data['macd_signal'] = 0
+
+    buy_signal_mask = (data['MACD'] > data['Signal']) & (data['MACD'].shift(1) <= data['Signal'].shift(1))
+    data.loc[buy_signal_mask, 'macd_signal'] = 1
+
+    sell_signal_mask = (data['MACD'] < data['Signal']) & (data['MACD'].shift(1) >= data['Signal'].shift(1))
+    data.loc[sell_signal_mask, 'macd_signal'] = -1
+
+    data = data.drop([f'Short_MA_{short_term}', f'Long_MA_{long_term}', 'Signal'], axis=1)
+
+    return data
+
+
