@@ -200,6 +200,7 @@ df['roc_5'] = calculate_roc(df, n = 5)
 df['roc_13'] = calculate_roc(df, n = 13)
 df['roc_26'] = calculate_roc(df, n = 26)
 df.drop(index=range(26), inplace = True)
+df = df.reset_index(drop=True)
 df[['roc_5_IMX', 'roc_5_branch']] = df['roc_5'].apply(lambda x: pd.Series(roc_wrapper(x)))
 df[['roc_13_IMX', 'roc_13_branch']] = df['roc_13'].apply(lambda x: pd.Series(roc_wrapper(x)))
 df[['roc_26_IMX', 'roc_26_branch']] = df['roc_26'].apply(lambda x: pd.Series(roc_wrapper(x)))
@@ -235,6 +236,7 @@ df[['d_30_IMX', 'd_30_branch']] = df['d_30'].apply(lambda x: pd.Series(kd_wrappe
 
 df = calculate_golden_dead_cross(df)
 df = calculate_macd(df)
+
 
 df.to_csv('SPY_processed.csv')
 
