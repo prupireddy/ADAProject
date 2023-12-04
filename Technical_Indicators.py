@@ -1,4 +1,6 @@
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 import sys
 
 def linear_interpolator(first_x, first_y, second_x, second_y, arg):
@@ -16,12 +18,13 @@ def calculate_rsi(data, column_name='Close', n=14):
     avg_loss = losses.rolling(window=n, min_periods=1).mean()
 
     rs = avg_gain / avg_loss
+    rs[avg_loss == 0] = np.inf
 
     rsi = 1 - (1 / (1 + rs))
 
     return rsi
 
-def rsi_IMX_wrapper(rsi_val):
+def rsi_wrapper(rsi_val):
     if rsi_val < .3 and rsi_val >= 0:
         return linear_interpolator(.3, .7, 0, 1, rsi_val), 0
     elif rsi_val <= .7 and rsi_val >= .3:
@@ -29,6 +32,7 @@ def rsi_IMX_wrapper(rsi_val):
     elif rsi_val > .7 and rsi_val <= 1:
         return linear_interpolator(.7, -.7, 1, -1, rsi_val), 2
     else: 
+        print(rsi_val)
         print("Out of Range")
         sys.exit(1)
 
@@ -38,20 +42,19 @@ def calculate_roc(data, column_name='Close', n=1):
 
     return roc
 
-def roc_IMX_wrapper(roc_val):
+def roc_wrapper(roc_val):
     if roc_val < .9:
         return -1, 0
-    elif roc_val <= 1.1 and rsi_val >= .9:
+    elif roc_val <= 1.1 and roc_val >= .9:
         return 0, 1
-    elif rsi_val > 1.1:
+    elif roc_val > 1.1:
         return 1, 2
     else: 
         print("Out of Range")
         sys.exit(1)
 
-df['RCI'] = df['Close'].rolling(window=window_size, center=True).apply(lambda x: pd.Series(x).rank().corr(pd.Series(range(1, window_size + 1))), raw=True)
 
-def rci_IMX_wrapper(rci_val):
+def rci_wrapper(rci_val):
     if rci_val < -.7 and rci_val >= -1:
         return linear_interpolator(-.7, .7, -1, 1, rci_val), 0
     elif rci_val <= .7 and rci_val >= -.7:
@@ -74,13 +77,13 @@ def calculate_volume_ratio(data, price_column='Close', volume_column='Volume', p
 
     data['Denominator'] = data[volume_column].rolling(window=period, min_periods=1).sum()
 
-    data['Volume Ratio'] = data['Numerator'] / data['Denominator']
+    data[f'volume_{period}'] = data['Numerator'] / data['Denominator']
 
-    data = data.drop(['Up Days', 'Down Days', 'Unchanged Days', 'Numerator', 'Denominator'], axis=1)
+    data = data.drop(['Up Days', 'Unchanged Days', 'Numerator', 'Denominator'], axis=1)
 
     return data
 
-def volume_IMX_wrapper(volume_val):
+def volume_wrapper(volume_val):
     if volume_val < .25 and volume_val >= 0:
         return linear_interpolator(.25, .8, 0, 1, volume_val), 0
     elif volume_val <= .75 and volume_val >= .25:
@@ -95,13 +98,13 @@ def calculate_rate_of_deviation(data, price_column='Close', moving_average_perio
 
     data['Moving Average'] = data[price_column].rolling(window=moving_average_period, min_periods=1).mean()
 
-    data['Rate of Deviation'] = (data[price_column] - data['Moving Average']) / data['Moving Average']
+    data[f'rod_{moving_average_period}'] = (data[price_column] - data['Moving Average']) / data['Moving Average']
 
     data = data.drop(['Moving Average'], axis=1)
 
     return data
 
-def rod_IMX_wrapper(rod_val):
+def rod_wrapper(rod_val):
     if rod_val < -.1:
         return 1, 0
     elif rod_val <= -0.05 and rod_val >= -.1:
@@ -123,19 +126,19 @@ def calculate_stochastic_kd(data, close_column='Close', low_column='Low', high_c
 
     data['%K'] = ((data[close_column] - data['Lowest Low']) / (data['Highest High'] - data['Lowest Low'])) * 100
 
-    data['%D'] = data['%K'].rolling(window=smoothing_period, min_periods=1).mean()
+    data[f'd_{lookback_days}'] = data['%K'].rolling(window=smoothing_period, min_periods=1).mean()
 
-    data = data.drop(['Lowest Low', 'Highest High'], axis=1)
+    data = data.drop(['Lowest Low', 'Highest High','%K'], axis=1)
     
     return data
     
-def kd_IMX_wrapper(kd_val):
+def kd_wrapper(kd_val):
     if kd_val < 30 and kd_val >= 0:
-        return linear_interpolator(30, .7, 0, 1, rod_val), 0
-    elif rod_val <= 70 and rod_val >= 30:
+        return linear_interpolator(30, .7, 0, 1, kd_val), 0
+    elif kd_val <= 70 and kd_val >= 30:
         return 0, 1
-    elif rod_val >  70 and kd_val <= 100:
-        return linear_interpolator(70, -.7, 100, -1, rod_val), 2
+    elif kd_val >  70 and kd_val <= 100:
+        return linear_interpolator(70, -.7, 100, -1, kd_val), 2
     else: 
         print("Out of Range")
         sys.exit(1)
@@ -150,10 +153,12 @@ def calculate_golden_dead_cross(data, short_term=5, long_term=26, price_column='
     golden_cross_mask = (data[f'Short_MA_{short_term}'] > data[f'Long_MA_{long_term}']) & \
                         (data[f'Short_MA_{short_term}'].shift(1) <= data[f'Long_MA_{long_term}'].shift(1))
     data.loc[golden_cross_mask, 'gd_cross'] = 1
+    print("hit1")
 
     dead_cross_mask = (data[f'Short_MA_{short_term}'] < data[f'Long_MA_{long_term}']) & \
                       (data[f'Short_MA_{short_term}'].shift(1) >= data[f'Long_MA_{long_term}'].shift(1))
     data.loc[dead_cross_mask, 'gd_cross'] = -1
+    print("hit1")
 
     data = data.drop([f'Short_MA_{short_term}', f'Long_MA_{long_term}'], axis=1)
 
@@ -172,12 +177,66 @@ def calculate_macd(data, short_term=5, long_term=26, signal_period=9, price_colu
 
     buy_signal_mask = (data['MACD'] > data['Signal']) & (data['MACD'].shift(1) <= data['Signal'].shift(1))
     data.loc[buy_signal_mask, 'macd_signal'] = 1
+    print("hit2")
 
     sell_signal_mask = (data['MACD'] < data['Signal']) & (data['MACD'].shift(1) >= data['Signal'].shift(1))
     data.loc[sell_signal_mask, 'macd_signal'] = -1
+    print("hit2")
 
     data = data.drop([f'Short_MA_{short_term}', f'Long_MA_{long_term}', 'Signal'], axis=1)
 
     return data
 
+df = pd.read_csv('SPY.csv')
 
+df['rsi_5'] = calculate_rsi(df, n = 5)
+df['rsi_13'] = calculate_rsi(df, n = 13)
+df['rsi_26'] = calculate_rsi(df, n = 26)
+df[['rsi_5_IMX', 'rsi_5_branch']] = df['rsi_5'].apply(lambda x: pd.Series(rsi_wrapper(x)))
+df[['rsi_13_IMX', 'rsi_13_branch']] = df['rsi_13'].apply(lambda x: pd.Series(rsi_wrapper(x)))
+df[['rsi_26_IMX', 'rsi_26_branch']] = df['rsi_26'].apply(lambda x: pd.Series(rsi_wrapper(x)))
+
+df['roc_5'] = calculate_roc(df, n = 5)
+df['roc_13'] = calculate_roc(df, n = 13)
+df['roc_26'] = calculate_roc(df, n = 26)
+df.drop(index=range(26), inplace = True)
+df[['roc_5_IMX', 'roc_5_branch']] = df['roc_5'].apply(lambda x: pd.Series(roc_wrapper(x)))
+df[['roc_13_IMX', 'roc_13_branch']] = df['roc_13'].apply(lambda x: pd.Series(roc_wrapper(x)))
+df[['roc_26_IMX', 'roc_26_branch']] = df['roc_26'].apply(lambda x: pd.Series(roc_wrapper(x)))
+
+df['rci_9'] = df['Close'].rolling(window=9).apply(lambda x: pd.Series(x).rank().corr(pd.Series(range(1, 9 + 1))), raw=True)
+df['rci_18'] = df['Close'].rolling(window=18).apply(lambda x: pd.Series(x).rank().corr(pd.Series(range(1, 18 + 1))), raw=True)
+df['rci_27'] = df['Close'].rolling(window=27).apply(lambda x: pd.Series(x).rank().corr(pd.Series(range(1, 27 + 1))), raw=True)
+df.drop(index=range(27), inplace = True)
+df[['rci_9_IMX', 'rci_9_branch']] = df['rci_9'].apply(lambda x: pd.Series(rci_wrapper(x)))
+df[['rci_18_IMX', 'rci_18_branch']] = df['rci_18'].apply(lambda x: pd.Series(rci_wrapper(x)))
+df[['rci_27_IMX', 'rci_27_branch']] = df['rci_27'].apply(lambda x: pd.Series(rci_wrapper(x)))
+
+df = calculate_volume_ratio(df, period = 5)
+df = calculate_volume_ratio(df, period = 13)
+df = calculate_volume_ratio(df, period = 26)
+df[['volume_5_IMX', 'volume_5_branch']] = df['volume_5'].apply(lambda x: pd.Series(volume_wrapper(x)))
+df[['volume_13_IMX', 'volume_13_branch']] = df['volume_13'].apply(lambda x: pd.Series(volume_wrapper(x)))
+df[['volume_26_IMX', 'volume_26_branch']] = df['volume_26'].apply(lambda x: pd.Series(volume_wrapper(x)))
+
+df = calculate_rate_of_deviation(df, moving_average_period = 5)
+df = calculate_rate_of_deviation(df, moving_average_period = 13)
+df = calculate_rate_of_deviation(df, moving_average_period = 26)
+df[['rod_5_IMX', 'rod_5_branch']] = df['rod_5'].apply(lambda x: pd.Series(rod_wrapper(x)))
+df[['rod_13_IMX', 'rod_13_branch']] = df['rod_13'].apply(lambda x: pd.Series(rod_wrapper(x)))
+df[['rod_26_IMX', 'rod_26_branch']] = df['rod_26'].apply(lambda x: pd.Series(rod_wrapper(x)))
+
+df = calculate_stochastic_kd(df, lookback_days = 12)
+df = calculate_stochastic_kd(df, lookback_days = 20)
+df = calculate_stochastic_kd(df, lookback_days = 30)
+df[['d_12_IMX', 'd_12_branch']] = df['d_12'].apply(lambda x: pd.Series(kd_wrapper(x)))
+df[['d_20_IMX', 'd_20_branch']] = df['d_20'].apply(lambda x: pd.Series(kd_wrapper(x)))
+df[['d_30_IMX', 'd_30_branch']] = df['d_30'].apply(lambda x: pd.Series(kd_wrapper(x)))
+
+df = calculate_golden_dead_cross(df)
+df = calculate_macd(df)
+
+df.to_csv('SPY_processed.csv')
+
+
+print(df.columns)
