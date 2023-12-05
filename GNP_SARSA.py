@@ -28,7 +28,7 @@ def map_num_to_fun(num):
     
 
 class GNP_Sarsa:
-    def __init__(self, num_actions, num_individuals, num_nodes, num_processing_nodes, num_judgement_nodes, alpha, gamma, epsilon, train, p_mut, p_cross):
+    def __init__(self, num_actions, num_individuals, num_nodes, num_processing_nodes, num_judgement_nodes, alpha, gamma, epsilon, train, p_mut, p_cross, num_mut, num_cross):
         self.genes = self.generate_genes(num_individuals, num_nodes, num_judgement_nodes)
         self.starts = self.generate_starts(num_individuals, num_nodes)
         self.num_judgement_nodes = num_judgement_nodes
@@ -42,6 +42,8 @@ class GNP_Sarsa:
         self.p_cross = p_cross
         self.total_nodes = num_nodes
         self.num_judgement_nodes = num_judgement_nodes
+        self.num_mut = num_mut
+        self.num_cross = num_cross
 
     def generate_genes(self, number_of_individuals, total_nodes, number_of_judgement_nodes):
         return_list = [0 for _ in range(number_of_individuals)]
@@ -200,12 +202,12 @@ class GNP_Sarsa:
                 
     def tournament_selection(self, proportion = .1):
 
-        tournament_indices = np.random.choice(self.num_individuals, size=proportion*tournament_size, replace=False)
+        tournament_indices = np.random.choice(int(self.num_individuals), size=int(proportion*self.num_individuals), replace=False)
         tournament_fitness = [self.fitness[i] for i in tournament_indices]
 
         return np.argmax(tournament_fitness)
     
-    def single_mutation(self, index):
+    def single_mutation_g(self, index):
         temp = self.genes[index]
         for i in range(self.num_judgement_nodes):
             if random.random() < self.p_mut:
@@ -242,7 +244,13 @@ class GNP_Sarsa:
         
         return temp
     
-    def single_crossover(self, index1, index2):
+    def single_mutation_s(self, index):
+        if random.random() < self.p_mut:
+            return random.randint(0,self.total_nodes-1)
+        else:
+            return self.starts[index]
+
+    def single_crossover_g(self, index1, index2):
         to_return1, to_return2 = self.genes[index1], self.genes[index2]
         for i in range(self.total_nodes):
             if random.random() < self.p_cross:
@@ -250,11 +258,30 @@ class GNP_Sarsa:
                 to_return1[i,:] = to_return2[i,:] 
                 to_return2[i,:] = temp
         return to_return1, to_return2
+
+    def single_crossover_s(self, index1, index2):
+        if random.random() < self.p_cross:
+            return self.starts[index2], self.starts[index1]
+        else:
+            return self.starts[index1], self.starts[index2]
         
     def evolution_step(self):
         temp = self.genes
+        temp_s = self.starts
         max_index = np.argmax(self.fitness)
         temp[0] = self.genes[max_index]
+        for i in range(1, num_mut+1):
+            index = self.tournament_selection()
+            temp[i] = self.single_mutation_g(index)
+            temp_s[i] = self.single_mutation_s(index)
+        for j in range(int(self.num_cross/2)):
+            index1 = self.tournament_selection()
+            index2 = self.tournament_selection()
+            temp[i+j+1], temp[i+j+2] = self.single_crossover_g(index1, index2)
+            temp_s[i+j+1], temp_s[i+j+2] = self.single_crossover_s(index1, index2)
+        self.genes = temp
+        self.starts = temp_s
+
 
 
 
@@ -270,9 +297,11 @@ epsilon = 0.1  # Exploration rate
 num_actions = 2 
 p_mut = .02
 p_cross = .1
+num_mut = 5
+num_cross = 4
 
-gnp_sarsa = GNP_Sarsa(num_actions, num_individuals, num_nodes, num_processing_nodes, num_judgement_nodes, alpha, gamma, epsilon, train, p_mut, p_cross)
-gnp_sarsa.single_crossover(0,1)
+gnp_sarsa = GNP_Sarsa(num_actions, num_individuals, num_nodes, num_processing_nodes, num_judgement_nodes, alpha, gamma, epsilon, train, p_mut, p_cross, num_mut, num_cross)
+gnp_sarsa.evolution_step()
 
 # Training phase: Train the GNP-Sarsa algorithm using historical data
 # You need to implement this part by processing the historical data and updating Q-values
