@@ -103,18 +103,19 @@ class GNP_Sarsa:
                 imx_values.append(-1)
                 dead_neg = dead_neg - 1           
             while number_units < 5:
+                curr_node = int(curr_node)
                 if curr_node <= 19:
                     action = random.randint(0, self.num_actions - 1)
                     if prev_transaction:
-                        self.genes[index][prev_node][2 + prev_action*4] += self.alpha*(reward - self.genes[index][prev_node][2 + prev_action*4])
+                        self.genes[index][prev_node, 2 + prev_action*4] += self.alpha*(reward - self.genes[index][prev_node,2 + prev_action*4])
                         prev_transaction = False    
-                    if self.genes[index][curr_node][(action*6)] < 19:
-                        imx, branch = map_num_to_fun(self.genes[index][curr_node][action*6])
-                        imx_values.append(train[i][imx])
+                    if self.genes[index][curr_node, (action*6)] < 19:
+                        imx, branch = map_num_to_fun(self.genes[index][curr_node, action*6])
+                        imx_values.append(train.loc[i, imx])
                         number_units = number_units + 1
-                        curr_node = self.genes[index][curr_node][train[i][branch] + 1]
-                    elif self.genes[index][curr_node][action*6] == 19:
-                        imx = train[i]['gd_cross']
+                        curr_node = self.genes[index][curr_node, int(train.loc[i, branch]) + 1]
+                    elif self.genes[index][curr_node, action*6] == 19:
+                        imx = train.loc[i, 'gd_cross']
                         branch = imx + 1
                         imx_values.append(imx)
                         if imx == 1:
@@ -122,9 +123,9 @@ class GNP_Sarsa:
                         elif imx == -1:
                             gd_neg = 3
                         number_units = number_units + 1
-                        curr_node = self.genes[index][curr_node][branch + 1]
-                    elif self.genes[index][curr_node][action*6] == 20:
-                        imx = train[i]['macd_signal']
+                        curr_node = self.genes[index][curr_node, branch + 1]
+                    elif self.genes[index][curr_node, action*6] == 20:
+                        imx = train.loc[i, 'macd_signal']
                         branch = imx + 1
                         imx_values.append(imx)
                         if imx == 1:
@@ -132,57 +133,57 @@ class GNP_Sarsa:
                         elif imx == -1:
                             dead_neg = 3
                         number_units = number_units + 1
-                        curr_node = self.genes[index][curr_node][branch + 1]
+                        curr_node = self.genes[index][curr_node, branch + 1]
                 else:
                     if random.random() < self.epsilon:
                         action = random.randint(0, self.num_actions - 1)
                     else:
-                        if self.genes[index][curr_node][2] > self.genes[index][curr_node][6]:
+                        if self.genes[index][curr_node, 2] > self.genes[index][curr_node, 6]:
                             action = 0 
                         else:
                             action = 1
                     if prev_transaction:
-                        self.genes[index][prev_node][2 + prev_action*4] += self.alpha*(reward + self.gamma*self.genes[index][curr_node][2 + action*4] - self.genes[index][prev_node][2 + prev_action*4])
+                        self.genes[index][prev_node, 2 + prev_action*4] += self.alpha*(reward + self.gamma*self.genes[index][curr_node, 2 + action*4] - self.genes[index][prev_node, 2 + prev_action*4])
                         prev_transaction = False
-                    if self.genes[index][curr_node][action*4] == 21:
+                    if self.genes[index][curr_node, action*4] == 21:
                         if asset == 0:
                             if (len(imx_values) != 0) and ((sum(imx_values))/(len(imx_values)) >= self.genes[index][curr_node, 1 + action*4]):    
-                                asset = cash/train[i]['Close']
+                                asset = cash/train.loc[i, 'Close']
                                 cash = 0
                                 imx_values = []
                                 if initial_trade:
-                                    last_price = train[i]['Close']
+                                    last_price = train.loc[i, 'Close']
                                     initial_trade = False
                                 else:
-                                    reward = last_price - train[i]['Close']
+                                    reward = last_price - train.loc[i, 'Close']
                                     fitness += reward
-                                    last_price = train[i]['Close']
+                                    last_price = train.loc[i, 'Close']
                                 prev_transaction = True 
                                 prev_node = curr_node
                                 prev_action = action
 
                     else:
                         if asset != 0:
-                            if (len(imx_values) != 0) and (sum(imx_values))/(len(imx_values)) <= self.genes[index][curr_node][1 + action*4]:    
-                                cash = train[i]['Close']*asset
+                            if (len(imx_values) != 0) and (sum(imx_values))/(len(imx_values)) <= self.genes[index][curr_node, 1 + action*4]:    
+                                cash = train.loc[i, 'Close']*asset
                                 asset = 0
                                 imx_values = []
                                 if initial_trade:
-                                    last_price = train[i]['Close']
+                                    last_price = train.loc[i, 'Close']
                                     initial_trade = False
                                 else: 
-                                    reward = train[i]['Close'] - last_price
+                                    reward = train.loc[i, 'Close'] - last_price
                                     fitness += reward
-                                    last_price = train[i]['Close']
+                                    last_price = train.loc[i, 'Close']
                                 prev_transaction = True 
                                 prev_node = curr_node
                                 prev_action = action
 
                     number_units = number_units + 5
                     if action == 0:
-                        curr_node = self.genes[index][curr_node][3]
+                        curr_node = self.genes[index][curr_node, 3]
                     elif action == 1:
-                        curr_node = self.genes[index][curr_node][7]
+                        curr_node = self.genes[index][curr_node, 7]
                 
 num_individuals = 1  
 num_processing_nodes = 10
@@ -196,7 +197,7 @@ epsilon = 0.1  # Exploration rate
 num_actions = 2 
 
 gnp_sarsa = GNP_Sarsa(num_actions, num_individuals, num_nodes, num_processing_nodes, num_judgement_nodes, alpha, gamma, epsilon, train)
-print(gnp_sarsa.individual_trading_run(0,train))
+gnp_sarsa.individual_trading_run(0,train)
 
 # Training phase: Train the GNP-Sarsa algorithm using historical data
 # You need to implement this part by processing the historical data and updating Q-values
