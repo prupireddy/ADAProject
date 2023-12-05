@@ -35,6 +35,9 @@ class GNP_Sarsa:
         self.gamma = gamma  # Discount rate
         self.epsilon = epsilon  # Exploration rate
         self.num_actions = num_actions
+        self.max_fitness = -np.inf
+        self.max_fitness_index = 0
+        self.num_individuals = num_individuals
 
     def generate_genes(self, number_of_individuals, total_nodes, number_of_judgement_nodes):
         return_list = [0 for _ in range(number_of_individuals)]
@@ -158,9 +161,9 @@ class GNP_Sarsa:
                                     reward = last_price - train.loc[i, 'Close']
                                     fitness += reward
                                     last_price = train.loc[i, 'Close']
-                                prev_transaction = True 
-                                prev_node = curr_node
-                                prev_action = action
+                                    prev_transaction = True 
+                                    prev_node = curr_node
+                                    prev_action = action
 
                     else:
                         if asset != 0:
@@ -175,17 +178,29 @@ class GNP_Sarsa:
                                     reward = train.loc[i, 'Close'] - last_price
                                     fitness += reward
                                     last_price = train.loc[i, 'Close']
-                                prev_transaction = True 
-                                prev_node = curr_node
-                                prev_action = action
+                                    prev_transaction = True 
+                                    prev_node = curr_node
+                                    prev_action = action
 
                     number_units = number_units + 5
                     if action == 0:
                         curr_node = self.genes[index][curr_node, 3]
                     elif action == 1:
                         curr_node = self.genes[index][curr_node, 7]
-                
-num_individuals = 1  
+        return fitness
+    
+    def generation_trading_run(self, train):
+        self.max_fitness = -np.inf
+        self.max_fitness_index = 0
+        for index in range(self.num_individuals):
+            if self.individual_trading_run(index, train) > self.max_fitness:
+                self.max_fitness = self.individual_trading_run(index, train)
+                self.max_fitness_index = index
+            
+            
+
+
+num_individuals = 10
 num_processing_nodes = 10
 num_judgement_nodes = 20
 train = pd.read_csv('SPY_processed.csv')
@@ -197,7 +212,7 @@ epsilon = 0.1  # Exploration rate
 num_actions = 2 
 
 gnp_sarsa = GNP_Sarsa(num_actions, num_individuals, num_nodes, num_processing_nodes, num_judgement_nodes, alpha, gamma, epsilon, train)
-gnp_sarsa.individual_trading_run(0,train)
+gnp_sarsa.generation_trading_run(train)
 
 # Training phase: Train the GNP-Sarsa algorithm using historical data
 # You need to implement this part by processing the historical data and updating Q-values
