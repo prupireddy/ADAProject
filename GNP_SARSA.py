@@ -1,4 +1,5 @@
 import random
+from tempfile import tempdir
 from winreg import EnableReflectionKey
 import numpy as np
 import pandas as pd
@@ -27,7 +28,7 @@ def map_num_to_fun(num):
     
 
 class GNP_Sarsa:
-    def __init__(self, num_actions, num_individuals, num_nodes, num_processing_nodes, num_judgement_nodes, alpha, gamma, epsilon, train):
+    def __init__(self, num_actions, num_individuals, num_nodes, num_processing_nodes, num_judgement_nodes, alpha, gamma, epsilon, train, p_mut, p_cross):
         self.genes = self.generate_genes(num_individuals, num_nodes, num_judgement_nodes)
         self.starts = self.generate_starts(num_individuals, num_nodes)
         self.num_judgement_nodes = num_judgement_nodes
@@ -37,6 +38,10 @@ class GNP_Sarsa:
         self.num_actions = num_actions
         self.fitness = [0 for _ in range(num_individuals)]
         self.num_individuals = num_individuals
+        self.p_mut = p_mut
+        self.p_cross = p_cross
+        self.total_nodes = num_nodes
+        self.num_judgement_nodes = num_judgement_nodes
 
     def generate_genes(self, number_of_individuals, total_nodes, number_of_judgement_nodes):
         return_list = [0 for _ in range(number_of_individuals)]
@@ -199,10 +204,58 @@ class GNP_Sarsa:
         tournament_fitness = [self.fitness[i] for i in tournament_indices]
 
         return np.argmax(tournament_fitness)
-            
     
-        
+    def single_mutation(self, index):
+        temp = self.genes[index]
+        for i in range(self.num_judgement_nodes):
+            if random.random() < self.p_mut:
+                temp[i,0] = random.randint(1,20)
+            for j in range(1,6):
+                if random.random() < self.p_mut:
+                    temp[i,j] = random.randint(0,self.total_nodes-1)
             
+            if random.random() < self.p_mut:
+                temp[i,6] = random.randint(1,20)
+            for j in range(7,12):
+                if random.random() < self.p_mut:
+                    temp[i,j] = random.randint(0,self.total_nodes-1)
+
+        for i in range(self.num_judgement_nodes, self.total_nodes):
+            if random.random() < self.p_mut:
+                temp[i,0] = random.randint(21,22)
+            if random.random() < self.p_mut:
+                if temp[i,0] == 21:
+                    temp[i,1] = random.random()
+                else:
+                    temp[i,1] = -1*random.random()
+            if random.random() < self.p_mut:
+                temp[i,4] = random.randint(21,22)
+            if random.random() < self.p_mut:
+                if temp[i,4] == 21:
+                    temp[i,5] = random.random()
+                else:
+                    temp[i,5] = -1*random.random()
+            if random.random() < self.p_mut:
+                temp[i,3] = random.randint(0,self.total_nodes-1)
+            if random.random() < self.p_mut:
+                temp[i,7] = random.randint(0,self.total_nodes-1)
+        
+        return temp
+    
+    def single_crossover(self, index1, index2):
+        to_return1, to_return2 = self.genes[index1], self.genes[index2]
+        for i in range(self.total_nodes):
+            if random.random() < self.p_cross:
+                temp = to_return1[i,:]
+                to_return1[i,:] = to_return2[i,:] 
+                to_return2[i,:] = temp
+        return to_return1, to_return2
+        
+    def evolution_step(self):
+        temp = self.genes
+        max_index = np.argmax(self.fitness)
+        temp[0] = self.genes[max_index]
+
 
 
 num_individuals = 10
@@ -215,9 +268,11 @@ alpha = 0.1  # Learning rate
 gamma = 0.9  # Discount rate
 epsilon = 0.1  # Exploration rate
 num_actions = 2 
+p_mut = .02
+p_cross = .1
 
-gnp_sarsa = GNP_Sarsa(num_actions, num_individuals, num_nodes, num_processing_nodes, num_judgement_nodes, alpha, gamma, epsilon, train)
-gnp_sarsa.generation_trading_run(train)
+gnp_sarsa = GNP_Sarsa(num_actions, num_individuals, num_nodes, num_processing_nodes, num_judgement_nodes, alpha, gamma, epsilon, train, p_mut, p_cross)
+gnp_sarsa.single_crossover(0,1)
 
 # Training phase: Train the GNP-Sarsa algorithm using historical data
 # You need to implement this part by processing the historical data and updating Q-values
