@@ -35,8 +35,7 @@ class GNP_Sarsa:
         self.gamma = gamma  # Discount rate
         self.epsilon = epsilon  # Exploration rate
         self.num_actions = num_actions
-        self.max_fitness = -np.inf
-        self.max_fitness_index = 0
+        self.fitness = [0 for _ in range(num_individuals)]
         self.num_individuals = num_individuals
 
     def generate_genes(self, number_of_individuals, total_nodes, number_of_judgement_nodes):
@@ -190,13 +189,19 @@ class GNP_Sarsa:
         return fitness
     
     def generation_trading_run(self, train):
-        self.max_fitness = -np.inf
-        self.max_fitness_index = 0
+        self.fitness = [0 for _ in range(num_individuals)]
         for index in range(self.num_individuals):
-            if self.individual_trading_run(index, train) > self.max_fitness:
-                self.max_fitness = self.individual_trading_run(index, train)
-                self.max_fitness_index = index
+            self.fitness[index] = self.individual_trading_run(index, train)
+                
+    def tournament_selection(self, proportion = .1):
+
+        tournament_indices = np.random.choice(self.num_individuals, size=proportion*tournament_size, replace=False)
+        tournament_fitness = [self.fitness[i] for i in tournament_indices]
+
+        return np.argmax(tournament_fitness)
             
+    
+        
             
 
 
