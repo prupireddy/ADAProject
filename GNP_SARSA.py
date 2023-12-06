@@ -65,14 +65,14 @@ class GNP_Sarsa:
             for i in range(self.num_judgement_nodes, self.total_nodes):
                 element[i,0] = random.randint(21,22)
                 if element[i,0] == 21:
-                    element[i,1] = random.random()
+                    element[i,1] = .01*random.random()
                 else:
-                    element[i,1] = -1*random.random()
+                    element[i,1] = -1*.01*random.random()
                 element[i,4] = random.randint(21,22)
                 if element[i,4] == 21:
-                    element[i,5] = random.random()
+                    element[i,5] = .01*random.random()
                 else:
-                    element[i,5] = -1*random.random()
+                    element[i,5] = -1*.01*random.random()
                 element[i,3] = random.randint(0,self.total_nodes-1)
                 element[i,7] = random.randint(0,self.total_nodes-1)
             
@@ -199,19 +199,18 @@ class GNP_Sarsa:
         return fitness
     
     def generation_trading_run(self):
-        self.fitness = [0 for _ in range(num_individuals)]
         for index in range(self.num_individuals):
             self.fitness[index] = self.individual_trading_run(index)
                 
-    def tournament_selection(self, proportion = .1):
+    def tournament_selection(self, proportion = .5):
 
         tournament_indices = np.random.choice(int(self.num_individuals), size=int(proportion*self.num_individuals), replace=False)
         tournament_fitness = [self.fitness[i] for i in tournament_indices]
 
-        return np.argmax(tournament_fitness)
+        return tournament_indices[np.argmax(tournament_fitness)]
     
     def single_mutation_g(self, index):
-        temp = self.genes[index]
+        temp = self.genes[index].copy()
         for i in range(self.num_judgement_nodes):
             if random.random() < self.p_mut:
                 temp[i,0] = random.randint(1,20)
@@ -254,11 +253,11 @@ class GNP_Sarsa:
             return self.starts[index]
 
     def single_crossover_g(self, index1, index2):
-        to_return1, to_return2 = self.genes[index1], self.genes[index2]
+        to_return1, to_return2 = self.genes[index1].copy(), self.genes[index2].copy()
         for i in range(self.total_nodes):
             if random.random() < self.p_cross:
-                temp = to_return1[i,:]
-                to_return1[i,:] = to_return2[i,:] 
+                temp = to_return1[i,:].copy()
+                to_return1[i,:] = to_return2[i,:].copy() 
                 to_return2[i,:] = temp
         return to_return1, to_return2
 
@@ -269,10 +268,11 @@ class GNP_Sarsa:
             return self.starts[index1], self.starts[index2]
         
     def evolution_step(self):
-        temp = self.genes
-        temp_s = self.starts
+        temp = self.genes.copy()
+        temp_s = self.starts.copy()
         max_index = np.argmax(self.fitness)
         temp[0] = self.genes[max_index]
+        temp_s[0] = self.starts[max_index]
         for i in range(1, num_mut+1):
             index = self.tournament_selection()
             temp[i] = self.single_mutation_g(index)
@@ -280,8 +280,8 @@ class GNP_Sarsa:
         for j in range(int(self.num_cross/2)):
             index1 = self.tournament_selection()
             index2 = self.tournament_selection()
-            temp[i+j+1], temp[i+j+2] = self.single_crossover_g(index1, index2)
-            temp_s[i+j+1], temp_s[i+j+2] = self.single_crossover_s(index1, index2)
+            temp[i+2*j+1], temp[i+2*j+2] = self.single_crossover_g(index1, index2)
+            temp_s[i+2*j+1], temp_s[i+2*j+2] = self.single_crossover_s(index1, index2)
         self.genes = temp
         self.starts = temp_s
     
@@ -388,11 +388,11 @@ class GNP_Sarsa:
     
     
     
-num_individuals = 10
-num_processing_nodes = 10
-num_judgement_nodes = 20
+num_individuals = 7
+num_processing_nodes = 1
+num_judgement_nodes = 1
 train = pd.read_csv('SPY_processed.csv')
-num_nodes = 30
+num_nodes = 2
 num_actions = 2
 alpha = 0.1  # Learning rate
 gamma = 0.9  # Discount rate
@@ -400,13 +400,15 @@ epsilon = 0.1  # Exploration rate
 num_actions = 2 
 p_mut = .02
 p_cross = .1
-num_mut = 5
+num_mut = 2
 num_cross = 4
-num_generations = 1
+num_generations = 2
 test = train
 
 gnp_sarsa = GNP_Sarsa(num_actions, num_individuals, num_nodes, num_processing_nodes, num_judgement_nodes, alpha, gamma, epsilon, train, p_mut, p_cross, num_mut, num_cross, num_generations, test)
-gnp_sarsa.individual_trading_run(0)
+print(gnp_sarsa.full_training_run())
+
+
 
 
 
