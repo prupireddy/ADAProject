@@ -412,6 +412,7 @@ num_cross = 120
 num_generations = 300
 
 gnp_sarsa = GNP_Sarsa(num_actions, num_individuals, num_nodes, num_processing_nodes, num_judgement_nodes, alpha, gamma, epsilon, train, p_mut, p_cross, num_mut, num_cross, num_generations, test)
+gnp_sarsa.full_training_run()
 print(gnp_sarsa.test_run())
 
 
