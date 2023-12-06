@@ -120,7 +120,7 @@ class GNP_Sarsa:
                     action = random.randint(0, self.num_actions - 1)
                     if prev_transaction:
                         self.genes[index][prev_node, 2 + prev_action*4] += self.alpha*(reward - self.genes[index][prev_node,2 + prev_action*4])
-                        prev_transaction = False    
+                        prev_transaction = False
                     if self.genes[index][curr_node, (action*6)] < 19:
                         imx, branch = map_num_to_fun(self.genes[index][curr_node, action*6])
                         imx_values.append(train.loc[i, imx])
@@ -166,7 +166,7 @@ class GNP_Sarsa:
                                 if initial_trade:
                                     last_price = train.loc[i, 'Close']
                                     initial_trade = False
-                                else:
+                                else: 
                                     reward = last_price - train.loc[i, 'Close']
                                     fitness += reward
                                     last_price = train.loc[i, 'Close']
@@ -406,8 +406,7 @@ num_generations = 1
 test = train
 
 gnp_sarsa = GNP_Sarsa(num_actions, num_individuals, num_nodes, num_processing_nodes, num_judgement_nodes, alpha, gamma, epsilon, train, p_mut, p_cross, num_mut, num_cross, num_generations, test)
-gnp_sarsa.full_training_run()
-gnp_sarsa.test_run()
+gnp_sarsa.individual_trading_run(0)
 
 
 
