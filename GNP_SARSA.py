@@ -271,7 +271,6 @@ class GNP_Sarsa:
         temp = self.genes.copy()
         temp_s = self.starts.copy()
         max_index = np.argmax(self.fitness)
-        print(np.max(self.fitness))
         temp[0] = self.genes[max_index]
         temp_s[0] = self.starts[max_index]
         for i in range(1, num_mut+1):
@@ -411,9 +410,16 @@ num_mut = 179
 num_cross = 120
 num_generations = 300
 
+def buy_and_hold(test):
+    cash = 5e6
+    asset = cash/test['Close'].iloc[0]
+    return (test['Close'].iloc[-1]*asset - cash)
+
 gnp_sarsa = GNP_Sarsa(num_actions, num_individuals, num_nodes, num_processing_nodes, num_judgement_nodes, alpha, gamma, epsilon, train, p_mut, p_cross, num_mut, num_cross, num_generations, test)
 gnp_sarsa.full_training_run()
 print(gnp_sarsa.test_run())
+
+#print(buy_and_hold(test))
 
 
 
