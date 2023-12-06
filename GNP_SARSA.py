@@ -65,14 +65,14 @@ class GNP_Sarsa:
             for i in range(self.num_judgement_nodes, self.total_nodes):
                 element[i,0] = random.randint(21,22)
                 if element[i,0] == 21:
-                    element[i,1] = .01*random.random()
+                    element[i,1] = random.random()
                 else:
-                    element[i,1] = -1*.01*random.random()
+                    element[i,1] = -1*random.random()
                 element[i,4] = random.randint(21,22)
                 if element[i,4] == 21:
-                    element[i,5] = .01*random.random()
+                    element[i,5] = random.random()
                 else:
-                    element[i,5] = -1*.01*random.random()
+                    element[i,5] = -1*random.random()
                 element[i,3] = random.randint(0,self.total_nodes-1)
                 element[i,7] = random.randint(0,self.total_nodes-1)
             
@@ -191,6 +191,7 @@ class GNP_Sarsa:
                                     prev_node = curr_node
                                     prev_action = action
 
+                    imx_values = []
                     number_units = number_units + 5
                     if action == 0:
                         curr_node = self.genes[index][curr_node, 3]
@@ -229,16 +230,16 @@ class GNP_Sarsa:
                 temp[i,0] = random.randint(21,22)
             if random.random() < self.p_mut:
                 if temp[i,0] == 21:
-                    temp[i,1] = .01*random.random()
+                    temp[i,1] = random.random()
                 else:
-                    temp[i,1] = -1*.01*random.random()
+                    temp[i,1] = -1*random.random()
             if random.random() < self.p_mut:
                 temp[i,4] = random.randint(21,22)
             if random.random() < self.p_mut:
                 if temp[i,4] == 21:
-                    temp[i,5] = .01*random.random()
+                    temp[i,5] = random.random()
                 else:
-                    temp[i,5] = -1*.01*random.random()
+                    temp[i,5] = -1*random.random()
             if random.random() < self.p_mut:
                 temp[i,3] = random.randint(0,self.total_nodes-1)
             if random.random() < self.p_mut:
@@ -271,6 +272,7 @@ class GNP_Sarsa:
         temp = self.genes.copy()
         temp_s = self.starts.copy()
         max_index = np.argmax(self.fitness)
+        print(np.max(self.fitness))
         temp[0] = self.genes[max_index]
         temp_s[0] = self.starts[max_index]
         for i in range(1, num_mut+1):
@@ -381,6 +383,7 @@ class GNP_Sarsa:
                                     fitness += reward
                                     last_price = test.loc[i, 'Close']
 
+                    imx_values = []
                     number_units = number_units + 5
                     if action == 0:
                         curr_node = self.genes[index][curr_node, 3]
