@@ -1,10 +1,4 @@
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
-import sys
-
-def linear_interpolator(first_x, first_y, second_x, second_y, arg):
-    """
+import pandas as pd    """
     This will impute the y-value of an x coordinate based on the linear interpolation built from the two points given to it.
 
     :first_x: x-coordinate of the first point used to build the interpolator
@@ -14,6 +8,12 @@ def linear_interpolator(first_x, first_y, second_x, second_y, arg):
     :arg: x-coordinate of the point for which the y-value needs to be interpolated
     :return: interpolated y-coordinate of the point x-coordinate of which was arg
     """
+import matplotlib.pyplot as plt
+import numpy as np
+import sys
+
+def linear_interpolator(first_x, first_y, second_x, second_y, arg):
+
     return (first_y + (arg - first_x)*((second_y - first_y)/(second_x - first_x)))
 
 

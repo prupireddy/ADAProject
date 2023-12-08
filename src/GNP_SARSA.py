@@ -76,7 +76,7 @@ class GNP_Sarsa:
 
     def generate_genes(self):
         """
-
+        This randomly initializes each of the values. Please see the presentation, paper, and original paper for guidance here.
 
         """
         return_list = [0 for _ in range(self.num_individuals)]
@@ -121,11 +121,11 @@ class GNP_Sarsa:
         return return_list
 
     def individual_trading_run(self, index):
-
-
-
-
-
+              """
+        This  will do the sarsa training for a given individual. The first half corresponds to judgement (broken into cases of non-macd, dead cross and those two).
+        The second corresponds to processing. The nested ifs correspond to when the node actually performs a buy or sell. Variables set and SARSA is triggered
+        on the next iteration.
+        """
 
         gd_pos = 0
         gd_neg = 0
