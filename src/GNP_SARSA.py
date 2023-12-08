@@ -6,6 +6,12 @@ import pandas as pd
 
 
 def map_num_to_fun(num):
+        """
+        This map the function number for a subnode to the actual names of the column to access for the imx value and branch respectively.
+
+        :num: the number inputted in
+        :returns: returns the name of the columns for the imx value and branch
+        """
     list_funs = [('rod_5_IMX','rod_5_branch'),
             ('rod_13_IMX','rod_13_branch'),
             ('rod_26_IMX','rod_26_branch'),
@@ -29,10 +35,30 @@ def map_num_to_fun(num):
 
 class GNP_Sarsa:
     def __init__(self, num_actions, num_individuals, num_nodes, num_processing_nodes, num_judgement_nodes, alpha, gamma, epsilon, train, p_mut, p_cross, num_mut, num_cross, num_generations, test):
+        """
+        This will=create an initial generation of individuals according to the parameters given to it.
+
+        :num_actions: the number of subnodes for each node
+        :num_individuals: the number of individuals in a generation
+        :num_nodes: the number of nodes in an individuals
+        :num_processing_nodes: the number of processing nodes in an individual
+        :num_judgement_nodes: the number of judgement nodes in an individual
+        :alpha: the learning rate for SARSA
+        :gamma: the discount rate for SARSA
+        :epsilon: the threshold for epsilon greedy (exploration rate)
+        :train: the training dataset
+        :p_mut: the probability of a mutation
+        :p_cross: the probability of a crossover 
+        :num_mut: the number of individuals in the next generation that will be formed from mutations
+        :num_cross: the number of individuals in the next generation that will be formed from crossovers
+        :num_generations: the number of generations (evolution steps)
+        :test: the testing dataset
+        :return: the set of individuals according to these parameters
+        """
         self.num_judgement_nodes = num_judgement_nodes
-        self.alpha = alpha  # Learning rate
-        self.gamma = gamma  # Discount rate
-        self.epsilon = epsilon  # Exploration rate
+        self.alpha = alpha  
+        self.gamma = gamma  
+        self.epsilon = epsilon  
         self.num_actions = num_actions
         self.fitness = [0 for _ in range(num_individuals)]
         self.num_individuals = num_individuals
@@ -49,6 +75,10 @@ class GNP_Sarsa:
         self.test = test
 
     def generate_genes(self):
+        """
+
+
+        """
         return_list = [0 for _ in range(self.num_individuals)]
         for num in range(len(return_list)):
             element = np.zeros([self.total_nodes, 12])
@@ -80,12 +110,23 @@ class GNP_Sarsa:
         return return_list
 
     def generate_starts(self):
+        """
+        This will=create the start nodes for each of the individuals simply by choosing a value between 0 and num_nodes - 1
+
+        :returns: the list of start nodes
+        """
         return_list = [0 for _ in range(self.num_individuals)]
         for num in range(len(return_list)):
             return_list[num] = random.randint(0,self.total_nodes-1)
         return return_list
 
     def individual_trading_run(self, index):
+
+
+
+
+
+
         gd_pos = 0
         gd_neg = 0
         dead_pos = 0
@@ -200,17 +241,32 @@ class GNP_Sarsa:
         return fitness
     
     def generation_trading_run(self):
+        """
+        This will train each of the individuals in a given generation
+        """
         for index in range(self.num_individuals):
             self.fitness[index] = self.individual_trading_run(index)
                 
     def tournament_selection(self, proportion = .1):
+        """
+        This will randomly select a given proportion of the population and pick the individual with the highest fitness
 
+        :proportion: the percent of the population to include in the subset
+        :return: returns the the individual with the highest fitness in the randomly selected subset
+        """
         tournament_indices = np.random.choice(int(self.num_individuals), size=int(proportion*self.num_individuals), replace=False)
         tournament_fitness = [self.fitness[i] for i in tournament_indices]
 
         return tournament_indices[np.argmax(tournament_fitness)]
     
     def single_mutation_g(self, index):
+        """
+        This will mutate a given individual by applying the same randomness bounds as the initialization, just that is it only activated with the probability p_mut. It also won't touch the 
+        Q-Values
+
+        :index: the index of the individual we are considering
+        :return: the mutated genome of the individual
+        """
         temp = self.genes[index].copy()
         for i in range(self.num_judgement_nodes):
             if random.random() < self.p_mut:
@@ -248,12 +304,26 @@ class GNP_Sarsa:
         return temp
     
     def single_mutation_s(self, index):
+        """
+        This will mutate a given individual by applying the same randomness bounds as the initialization, just that is it only activated with the probability p_mut. It also won't touch the 
+        Q-Values
+
+        :index: the index of the individual we are considering
+        :return: the mutated genome of the individual
+        """
         if random.random() < self.p_mut:
             return random.randint(0,self.total_nodes-1)
         else:
             return self.starts[index]
 
     def single_crossover_g(self, index1, index2):
+            """
+        This will exchange the respective rows of two individuals if the crossover probability is hit. 
+
+        :index1: the index of the first individual we are considering
+        :index2: the index of the second individual we are considering
+        :return: the crossed over genomes
+        """
         to_return1, to_return2 = self.genes[index1].copy(), self.genes[index2].copy()
         for i in range(self.total_nodes):
             if random.random() < self.p_cross:
@@ -263,12 +333,22 @@ class GNP_Sarsa:
         return to_return1, to_return2
 
     def single_crossover_s(self, index1, index2):
+                    """
+        This will exchange the respective start nodes of two individuals if the crossover probability is hit. 
+
+        :index1: the index of the first individual we are considering
+        :index2: the index of the second individual we are considering
+        :return: the crossed over starts
+        """
         if random.random() < self.p_cross:
             return self.starts[index2], self.starts[index1]
         else:
             return self.starts[index1], self.starts[index2]
         
     def evolution_step(self):
+        """
+        This puts together all of the previous functions to return the next generation. It takes the highest performing individual, then it creates all of the mutations, then it does all of the crossovers. 
+        """
         temp = self.genes.copy()
         temp_s = self.starts.copy()
         max_index = np.argmax(self.fitness)
@@ -288,11 +368,22 @@ class GNP_Sarsa:
         self.starts = temp_s
     
     def full_training_run(self):
+        """
+        This will do all of the training: all of the SARSA and evolution steps (in that order) for all the generations
+        """
         for i in range(self.num_generations):
             self.generation_trading_run()
             self.evolution_step()
     
     def test_run(self):
+        """
+        This will do the testing. It has the same logic as the trial run with three exceptions
+        -It does not SARSA train
+        -It does not epsilon select the subnode but instead will just pick the subnode with the highest value
+        -It uses the test dataset
+
+        :return: pnl (profit and loss: the sum of the (sell total value - buy total value))
+        """
         index = np.argmax(self.fitness)
         gd_pos = 0
         gd_neg = 0
@@ -392,6 +483,7 @@ class GNP_Sarsa:
         return pnl
     
 
+#our parameters
 df = pd.read_csv('SPY_processed.csv')   
 train_test_data = df.iloc[-(737+246):, :]
 train = train_test_data.iloc[:737, :]
@@ -414,10 +506,16 @@ num_cross = 120
 num_generations = 300
 
 def buy_and_hold(test):
+        """
+        This will do the buy and hold strategy - just buy at the beginning and sell at the end. 
+
+        :return: pnl (profit and loss: the sum of the (sell total value - buy total value))
+        """
     cash = 5e6
     asset = cash/test['Close'].iloc[0]
     return (test['Close'].iloc[-1]*asset - cash)
 
+#do the training and the testing
 gnp_sarsa = GNP_Sarsa(num_actions, num_individuals, num_nodes, num_processing_nodes, num_judgement_nodes, alpha, gamma, epsilon, train, p_mut, p_cross, num_mut, num_cross, num_generations, test)
 gnp_sarsa.full_training_run()
 print(gnp_sarsa.test_run())
